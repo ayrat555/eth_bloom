@@ -19,7 +19,8 @@ defmodule EthBloom.Mixfile do
 
   defp deps do
     [
-      {:keccakf1600, "~> 2.0.0", hex: :keccakf1600_orig}
+      {:keccakf1600, "~> 2.0.0", hex: :keccakf1600_orig},
+      {:credo, "~> 0.8", only: [:dev, :test], runtime: false}
     ]
   end
 end
