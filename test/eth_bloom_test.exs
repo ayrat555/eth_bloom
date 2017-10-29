@@ -16,6 +16,8 @@ defmodule EthBloomTest do
       new_filter = EthBloom.add(@default_filter, "punk")
 
       assert EthBloom.contains?(new_filter, "punk")
+      assert EthBloom.contains?(new_filter, "rock")
+      refute EthBloom.contains?(new_filter, "blues")
     end
   end
 end
