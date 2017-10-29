@@ -1,43 +1,40 @@
 defmodule EthBloom do
-  @required_bytes [0, 2, 4]
+  use Bitwise
 
-  @spec create(binary()) :: [integer()]
   def create(data) when is_binary(data) do
     data
-    |> sha3_bytes
-    |> Enum.reduce(new_bloom_list(), fn(byte, acc) ->
-      acc |> List.replace_at(byte, 1)
+    |> :keccakf1600.sha3_256
+    |> bit_numbers
+    |> Enum.reduce(0, fn(bit_number, bloom) ->
+      bloom ||| (1 <<< bit_number)
     end)
   end
 
-  @spec new_bloom_list() :: [integer()]
-  defp new_bloom_list do
-    List.duplicate(0, 256)
-  end
-
-  @spec sha3_bytes(binary()) :: [integer]
-  def sha3_bytes(data) when is_binary(data) do
+  def add(bloom, data) when is_binary(data) do
     data
-    |> sha3_binary
-    |> to_bytes
-    |> required_bytes
+    |> :keccakf1600.sha3_256
+    |> bit_numbers
+    |> Enum.reduce(bloom, fn(bit_number, bloom) ->
+      bloom ||| (1 <<< bit_number)
+    end)
   end
 
-  @spec to_bytes(binary(), [] | [integer]) :: [integer()]
-  defp to_bytes(binary, acc \\ [])
+  def contains?(current_bloom, val) do
+    bloom = create(val)
 
-  defp to_bytes("", acc), do: acc
+    (bloom && current_bloom) == bloom
+  end
 
-  defp to_bytes(<<b :: size(8), tail :: bitstring>>, acc), do: to_bytes(tail, acc ++ [b])
+  defp bit_numbers(hash) do
+    {result, _ } =
+      1..3
+      |> Enum.reduce({[], hash}, fn(_, acc) ->
+        {bits, <<a1, a2, tail::bitstring>>} = acc
+        new_bit = ((a1 <<< 8) + a2) &&& 2047
 
-  @spec sha3_binary(binary()) :: binary()
-  defp sha3_binary(data) when is_binary(data), do: data |> :keccakf1600.sha3_256
+        {[new_bit|bits], tail}
+      end)
 
-  @spec required_bytes([integer()]) :: [integer]
-  defp required_bytes(bytes) when is_list(bytes) do
-    @required_bytes
-    |> Enum.map(fn(byte) ->
-      bytes |> Enum.at(byte)
-    end)
+    result
   end
 end
